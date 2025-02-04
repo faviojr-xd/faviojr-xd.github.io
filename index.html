@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Retro</title>
+    <style>
+        body {
+            text-align: center;
+            background: black;
+            color: white;
+            font-family: monospace;
+        }
+        canvas {
+            border: 4px solid white;
+            display: block;
+            margin: 20px auto;
+            background: black;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .controls button {
+            padding: 10px;
+            font-size: 18px;
+            background: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>TETRIS RETRO</h1>
+    <canvas id="tetris" width="300" height="600"></canvas>
+    <div class="controls">
+        <button onclick="moveLeft()">⬅️</button>
+        <button onclick="rotatePiece()">🔄</button>
+        <button onclick="moveRight()">➡️</button>
+        <button onclick="dropPiece()">⬇️</button>
+    </div>
+    <script>
+        const canvas = document.getElementById("tetris");
+        const ctx = canvas.getContext("2d");
+        const ROWS = 20, COLS = 10, SIZE = 30;
+        let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        let piece = { x: 4, y: 0, shape: [[1, 1, 1], [0, 1, 0]] };
+
+        function drawBoard() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (board[y][x]) {
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(x * SIZE, y * SIZE, SIZE, SIZE);
+                        ctx.strokeStyle = "black";
+                        ctx.strokeRect(x * SIZE, y * SIZE, SIZE, SIZE);
+                    }
+                }
+            }
+        }
+
+        function drawPiece() {
+            ctx.fillStyle = "red";
+            piece.shape.forEach((row, dy) => {
+                row.forEach((value, dx) => {
+                    if (value) {
+                        ctx.fillRect((piece.x + dx) * SIZE, (piece.y + dy) * SIZE, SIZE, SIZE);
+                        ctx.strokeStyle = "black";
+                        ctx.strokeRect((piece.x + dx) * SIZE, (piece.y + dy) * SIZE, SIZE, SIZE);
+                    }
+                });
+            });
+        }
+
+        function collision() {
+            return piece.shape.some((row, dy) => 
+                row.some((value, dx) => 
+                    value && (piece.y + dy >= ROWS || board[piece.y + dy]?.[piece.x + dx])
+                )
+            );
+        }
+
+        function mergePiece() {
+            piece.shape.forEach((row, dy) => {
+                row.forEach((value, dx) => {
+                    if (value) {
+                        board[piece.y + dy][piece.x + dx] = 1;
+                    }
+                });
+            });
+        }
+
+        function moveLeft() {
+            piece.x--;
+            if (collision()) piece.x++;
+        }
+
+        function moveRight() {
+            piece.x++;
+            if (collision()) piece.x--;
+        }
+
+        function dropPiece() {
+            piece.y++;
+            if (collision()) {
+                piece.y--;
+                mergePiece();
+                piece = { x: 4, y: 0, shape: [[1, 1, 1], [0, 1, 0]] };
+            }
+        }
+
+        function rotatePiece() {
+            let temp = piece.shape[0].map((_, i) => piece.shape.map(row => row[i])).reverse();
+            let oldShape = piece.shape;
+            piece.shape = temp;
+            if (collision()) piece.shape = oldShape;
+        }
+
+        function update() {
+            piece.y++;
+            if (collision()) {
+                piece.y--;
+                mergePiece();
+                piece = { x: 4, y: 0, shape: [[1, 1, 1], [0, 1, 0]] };
+            }
+            drawBoard();
+            drawPiece();
+            setTimeout(update, 500);
+        }
+        
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowLeft") moveLeft();
+            if (e.key === "ArrowRight") moveRight();
+            if (e.key === "ArrowDown") dropPiece();
+            if (e.key === "ArrowUp") rotatePiece();
+        });
+
+        update();
+    </script>
+</body>
+</html>
